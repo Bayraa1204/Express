@@ -5,6 +5,49 @@ const fs = require("fs");
 
 const data = require("./mockData.json");
 
+const checkNameAndPass = (req, res, next) => {
+  const body = req.body;
+  const user = data.find((user) => {
+    return user.name === body.name && user.password == Number(body.password);
+  });
+  if (!user) {
+    res.send("Name or Password is Incorrect");
+  } else {
+    next();
+  }
+};
+const checkAccountAvailable = (req, res, next) => {
+  const body = req.body;
+  const user = data.find((user) => {
+    return user.name === body.name;
+  });
+  if (user) {
+    res.send("UserName Already Taken");
+  } else {
+    next();
+  }
+};
+
+app.post("/signup", checkAccountAvailable, (req, res) => {
+  const body = req.body;
+  const newBody = {
+    id: JSON.stringify(data.length + 1),
+    ...body,
+  };
+  data.push(newBody);
+  fs.writeFileSync("./mockData.json", JSON.stringify(data), (err) => {
+    console.log(err);
+  });
+});
+
+app.post("/login", checkNameAndPass, (req, res) => {
+  const body = req.body;
+  const user = data.find((user) => {
+    return user.name === body.name && user.password == Number(body.password);
+  });
+  res.send(user);
+});
+
 app.get("/users", function (req, res) {
   const url = req.url;
   if (url.startsWith("/users?")) {
@@ -21,34 +64,18 @@ app.get("/users", function (req, res) {
   }
   res.send(data);
 });
-app.post("/login", (req, res) => {
-  const body = req.body;
-  const user = data.find((user) => {
-    return user.name === body.name && user.password == Number(body.password);
-  });
 
-  if (user) {
-    res.send(user);
-  } else {
-    res.send("User Not Found");
-  }
-});
-app.post("/signup", (req, res) => {
+app.delete("/", (req, res) => {
   const body = req.body;
-  const user = data.find((user) => {
-    return user.name === body.name;
-  });
-  if (user) {
-    res.send("UserName Already Taken");
-  } else {
-    const newBody = {
-      id: JSON.stringify(data.length + 1),
-      ...body,
-    };
-    data.push(newBody);
-    fs.writeFileSync("./mockData.json", JSON.stringify(data), (err) => {
+  if (body.id !== Number(body.id)) {
+    const filteredData = data.filter((user) => {
+      return user.id !== body.id;
+    });
+    fs.writeFileSync("./mockData.json", JSON.stringify(filteredData), (err) => {
       console.log(err);
     });
+  } else {
+    console.log("no number");
   }
 });
 
